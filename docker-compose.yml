@@ -1,0 +1,33 @@
+version: '3'
+services:
+  postgres_db:
+    image: postgres
+  redis:
+    image: redis
+    container_name: redis-backtest-service
+    expose:
+      - 6379
+#   service:
+#     build: .
+#     command: bash -c "python manage.py process_tasks"
+  web:
+    build: .
+    command: bash -c "python manage.py makemigrations && python manage.py migrate  && python manage.py runserver  0.0.0.0:8000 "
+    volumes:
+      - .:/code
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    depends_on:
+      - postgres_db
+      - cloud-sql-proxy
+      - redis
+  cloud-sql-proxy:
+    image: gcr.io/cloudsql-docker/gce-proxy:1.11
+    command: /cloud_sql_proxy --dir=/cloudsql -instances=master-database-project-id:us-central1:master-database-postgres=tcp:0.0.0.0:5432 -credential_file=/secrets/cloudsql/credentials.json
+    ports:
+      - 5432
+    volumes:
+      - ./credentials.json:/secrets/cloudsql/credentials.json
+      

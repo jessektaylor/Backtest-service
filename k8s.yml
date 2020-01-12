@@ -1,0 +1,71 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: ${PROJECT_NAME}
+spec:
+  selector:
+    app: ${PROJECT_NAME}
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8002
+  type: LoadBalancer
+---
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: ${PROJECT_NAME}
+  labels:
+    app: ${PROJECT_NAME}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ${PROJECT_NAME}
+  template:
+    metadata:
+      labels:
+        app: ${PROJECT_NAME}
+    spec:
+      containers:
+      - name: ${PROJECT_NAME}
+        image: gcr.io/${GOOGLE_PROJECT_ID}/${PROJECT_NAME}:${CIRCLE_SHA1}
+        env:
+          - name: db_user
+            valueFrom:
+              secretKeyRef:
+                name: cloudsql-db-credentials
+                key: username
+          - name: db_password
+            valueFrom:
+              secretKeyRef:
+                name: cloudsql-db-credentials
+                key: password
+          - name: db_name
+            valueFrom:
+              secretKeyRef:
+                name: cloudsql-db-credentials
+                key: dbname
+          - name: isonline
+            valueFrom:
+              secretKeyRef:
+                name: isonline
+                key: isonline
+        ports:
+        - name: http
+          containerPort: 8001
+          protocol: TCP
+      - name: cloudsql-proxy
+        image: gcr.io/cloudsql-docker/gce-proxy:1.14
+        command: ["/cloud_sql_proxy",
+              "-instances=master-database-project-id:us-central1:master-database-postgres=tcp:5432",
+              "-credential_file=/secrets/cloudsql/credentials.json"]
+        volumeMounts:
+          - name: postgres-secret-ego
+            mountPath: /secrets/cloudsql
+            readOnly: true
+      volumes:
+        - name: postgres-secret-ego
+          secret:
+            secretName: cloudsql-instance-credentials
+  
