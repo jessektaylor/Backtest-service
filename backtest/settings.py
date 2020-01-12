@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'channels',
     'historical',
     'live',
+    'API',
     'rest_framework',
     'background_task',
     'django.contrib.admin',

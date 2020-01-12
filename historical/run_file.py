@@ -33,6 +33,7 @@ class RunClass():
     
     def _back_test(self):
         while True:
+            print('not breaking')
             if self.bars.continue_backtest == True:
                 self.bars.update_bars()
                 while True:
@@ -60,6 +61,7 @@ class RunClass():
 
     def _run_stats(self):
         self.stats.create_stats(self.portfolio)
+        print('loading dddddBBBBBBBBB')
         self.stats.load_db(name=self.name,
                          description= self.description,
                          products=self.products)

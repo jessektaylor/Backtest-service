@@ -4,7 +4,7 @@ import pandas as pd
 from django_pandas.io import read_frame
 from abc import ABCMeta, abstractmethod
 from historical.event import MarketEvent
-from historical.models import Product, HistoricRate
+from API.models import Product, HistoricRate
 from historical.event import MarketEvent
 
 

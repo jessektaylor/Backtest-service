@@ -82,6 +82,7 @@ class PortfolioStatisticsLoader(Stats):
         for item in ['total','commission','rs','rolling_DD']:
             equities.remove(item)
         for index, row in self.portfolio_df.iterrows(): 
+            print('saving ', index)
             try: # when dulpliate is attempted causes error. Try will catch these attemps and keep moving foward. 
                 run = BackTestRun(strategy=s,
                                     date=index,
