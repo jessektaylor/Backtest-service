@@ -26,3 +26,5 @@ channels
 channels_redis
 django-model-utils 
 pyfiglet
+django-chartjs
+

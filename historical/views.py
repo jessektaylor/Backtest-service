@@ -11,7 +11,20 @@ from historical.statistics import PortfolioStatisticsLoader
 from historical.strategy import BuyAndHoldStrategy
 from historical.portfolio import BasicPortfolio
 from historical.run_file import RunClass
+from django.views.generic.base import TemplateView
 
+
+class PortfolioView(TemplateView):
+        template_name = 'historic-portfolio.html'
+
+        def get_context_data(self, **kwargs):
+                context = super().get_context_data(**kwargs)
+                
+                context['datatest'] =  [
+                { 'x': '2017-01-06 18:39:30', 'y': 100 },
+                { 'x': '2017-01-07 18:39:28', 'y': 101 },
+                ]
+                return context  
 
 
 # Create your views here.

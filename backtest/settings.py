@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'API',
     'rest_framework',
     'background_task',
+    'chartjs',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
