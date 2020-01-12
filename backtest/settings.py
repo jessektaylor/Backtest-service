@@ -14,23 +14,33 @@ import os
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
+TEMPLATE_DIR = os.path.join(BASE_DIR,'templates')
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'u^zu(#kt1@(zoqrym%o=7ybfd)5l+#k&(e91fzh8w88s%4)i)!'
+SECRET_KEY = '=vbb!8sle330^e3lmf6a40vp(tj#!p8=!l2vorhj*5y$g6zo^7'
+
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+if os.getenv('isonline')=='isonline':
+    DEBUG = False
+else:
+    DEBUG = True
 
-ALLOWED_HOSTS = []
+
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
 
 INSTALLED_APPS = [
+    'channels',
+    'historical',
+    'live',
+    'rest_framework',
+    'background_task',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -54,7 +64,7 @@ ROOT_URLCONF = 'backtest.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [TEMPLATE_DIR],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -67,19 +77,83 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'backtest.wsgi.application'
 
+# WSGI_APPLICATION = 'backtest.wsgi.application'
+ASGI_APPLICATION = 'backtest.routing.application'  
+# Channel layer used for websockets 
+if os.getenv('isonline')=='isonline': # if hosted on cloud var is found then assign the hosts for cloud use
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels_redis.core.RedisChannelLayer',
+            'CONFIG': {
+                "hosts": [('redis-release-master.default.svc.cluster.local',6379)], # used for pods DNS communication
+            },
+        },
+    }
+else:
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels_redis.core.RedisChannelLayer',
+            'CONFIG': {
+                "hosts": [('localhost', 6379)], # localhost is used with docker containers comunicating
+            },
+        },
+    }
 
 # Database
 # https://docs.djangoproject.com/en/3.0/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+############################################################
+### SET SWITCH BELOW >>>>'comment out one switch line'   ###
+############################################################
+# switch = 'off'  # CONNECTS TO LOCALY HOSTED POSTGRES DATABASE
+switch = 'on' # CONNECTS TO GOOGLE CLOUD POSTGRESS HOSTED DATABASE
+"""
+    SET SWITCH--> 'OFF' TO BUILD AND USE LOCALY HOSTED DATABASE
+    SET SWITC-->  'ON' TO RUN LOCALLY BUT CONECT TO DATABASE HOSTED ON CLOUD
+"""
+############################################################
+ # 'isonline' global varible that exists only on GOOGlE Cloud
+if os.getenv('isonline')=='isonline':
+    DATABASES = {
+        'default': {
+            'ENGINE':'django.db.backends.postgresql',
+            'HOST':'localhost',
+            'USER':os.getenv('db_user'),
+            'PASSWORD':os.getenv('db_password'),
+            'NAME':os.getenv('db_name'),
+            'PORT':5432,
+        }
     }
-}
-
+ # 'is_docker_composed' global varible that exists only LCOALY
+elif os.getenv('is_docker_composed')=='is_docker_composed' and switch=='on':
+    print('requesting connectiong from main-database-1 through google Cloud Proxy ')
+    print('This is running as a side car container via Docker-compose')
+    DATABASES = {
+        'default': {
+            'ENGINE':'django.db.backends.postgresql',
+            'HOST':'cloud-sql-proxy',
+            'USER':os.getenv('USER'),
+            'PASSWORD':os.getenv('PASSWORD'),
+            'NAME':os.getenv('NAME'),
+            'PORT':5432,
+        }
+    }
+# switch is off use container with Postgress hosted Locally
+else: 
+    if switch == 'off' and os.getenv('isonline')!='isonline': 
+        print('using postgres database created inside container')
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.postgresql',
+                'NAME': 'postgres',
+                'USER': 'postgres',
+                'HOST': 'postgres_db',
+                'PORT': 5432,
+            }
+        }
+    else:
+        print(' A database must be selected review the setting file.')
 
 # Password validation
 # https://docs.djangoproject.com/en/3.0/ref/settings/#auth-password-validators
@@ -118,3 +192,4 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.0/howto/static-files/
 
 STATIC_URL = '/static/'
+BACKGROUND_TASK_RUN_ASYNC = True 
